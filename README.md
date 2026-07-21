@@ -38,16 +38,8 @@
 
 Private, on-device AI chat that runs local GGUF models via [llama.cpp](https://github.com/ggml-org/llama.cpp) and connects to 10+ cloud providers from a single keyboard-driven workspace.
 
-## Platforms
 
-| Platform | Status | Repository |
-|----------|--------|------------|
-| 🖥️ Desktop | ✅ Stable | https://github.com/Danyalkhattak/Xirea-Desktop |
-| 📱 Android | ✅ Stable | https://github.com/Danyalkhattak/Xirea |
-
----
-
-[Install](#install) · [Build from source](#build-from-source) · [Features](#features) · [Architecture](#architecture) · [Contributing](#contributing)
+[Platforms](#platforms) · [Install](#install) · [Build from source](#build-from-source) · [Features](#features) · [Architecture](#architecture) · [Contributing](#contributing)
 
 </div>
 
@@ -61,6 +53,15 @@ Private, on-device AI chat that runs local GGUF models via [llama.cpp](https://g
 - **Production-quality Rust backend.** Streaming downloads with HTTP Range resume, real-time llama-server stdout parsing, SHA-256 verification, live benchmarking.
 
 > The Android app has been stable since v2.0.0. This is the **official desktop port** — same brand, same privacy-first philosophy, rebuilt for large screens.
+
+## Platforms
+
+| Platform | Status | Repository |
+|----------|--------|------------|
+| 🖥️ Desktop | ✅ Stable | https://github.com/Danyalkhattak/Xirea-Desktop |
+| 📱 Android | ✅ Stable | https://github.com/Danyalkhattak/Xirea |
+
+---
 
 ## Install
 
