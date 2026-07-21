@@ -1,0 +1,430 @@
+name: Build
+
+# Build Xirea Desktop for Windows x64, macOS (Apple Silicon + Intel), and Linux x86_64.
+#
+# This workflow AUTOMATICALLY downloads the correct official llama.cpp release
+# for each platform during CI — you don't need to commit Linux/macOS binaries
+# to the repo. Windows binaries are committed to src-tauri/binaries/windows/
+# for local dev convenience, but CI downloads a fresh copy on every build to
+# ensure reproducibility.
+#
+# llama.cpp releases: https://github.com/ggml-org/llama.cpp/releases
+#
+# To trigger a release build, push a tag like `v1.2.3`. The workflow will:
+#   1. Build for all 4 platforms in parallel.
+#   2. Download + extract the matching llama.cpp release into the correct
+#      src-tauri/binaries/<subfolder>/ before each build.
+#   3. Upload artifacts for each platform.
+#   4. Create a GitHub release with all artifacts attached (on tag push only).
+
+on:
+  push:
+    branches: [main, master]
+    tags: ["v*"]
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:
+    
+permissions:
+  contents: write
+
+env:
+  CARGO_INCREMENTAL: 0
+  CARGO_NET_RETRY: 10
+  RUSTUP_MAX_RETRIES: 10
+  NODE_VERSION: "20"
+  # Pin the llama.cpp release tag for reproducible CI builds.
+  # Update this to the latest stable release from:
+  # https://github.com/ggml-org/llama.cpp/releases
+  LLAMA_CPP_RELEASE_TAG: "b9297"
+
+jobs:
+  # -------------------------------------------------------------------------
+  # Windows — x86_64
+  # -------------------------------------------------------------------------
+  build-windows-x86_64:
+    name: Windows (x86_64)
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install Rust toolchain (stable)
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+
+      - name: Cache Cargo registry
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            src-tauri/target
+          key: ${{ runner.os }}-windows-cargo-${{ hashFiles('src-tauri/Cargo.lock', 'src-tauri/Cargo.toml') }}
+          restore-keys: ${{ runner.os }}-windows-cargo-
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Cache llama.cpp binaries (Windows)
+        uses: actions/cache@v4
+        id: cache-llama-win
+        with:
+          path: src-tauri/binaries/windows
+          key: ${{ runner.os }}-windows-llama-${{ env.LLAMA_CPP_RELEASE_TAG }}
+
+      - name: Fetch llama.cpp release (Windows x64, CPU)
+        if: steps.cache-llama-win.outputs.cache-hit != 'true'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -e
+          mkdir -p src-tauri/binaries/windows
+          ASSET_NAME="llama-${LLAMA_CPP_RELEASE_TAG}-bin-win-cpu-x64.zip"
+          echo "Downloading $ASSET_NAME"
+          curl -fsSL -H "Authorization: token ${GH_TOKEN}" \
+               -H "Accept: application/octet-stream" \
+               -L -o /tmp/llama-win.zip \
+               "https://github.com/ggml-org/llama.cpp/releases/download/${LLAMA_CPP_RELEASE_TAG}/${ASSET_NAME}"
+          echo "Extracting to src-tauri/binaries/windows/"
+          unzip -o /tmp/llama-win.zip -d src-tauri/binaries/windows/
+          echo "Files in windows/ folder:"
+          ls -la src-tauri/binaries/windows/
+
+      - name: Build Tauri app
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          args: --target x86_64-pc-windows-msvc
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: xirea-windows-x86_64
+          path: |
+            src-tauri/target/x86_64-pc-windows-msvc/release/bundle/msi/*.msi
+            src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/*.exe
+          if-no-files-found: warn
+
+  # -------------------------------------------------------------------------
+  # macOS — Apple Silicon (M1/M2/M3/M4)
+  # -------------------------------------------------------------------------
+  build-macos-aarch64:
+    name: macOS (Apple Silicon)
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install Rust toolchain (stable)
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin
+
+      - name: Cache Cargo registry
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            src-tauri/target
+          key: ${{ runner.os }}-aarch64-cargo-${{ hashFiles('src-tauri/Cargo.lock', 'src-tauri/Cargo.toml') }}
+          restore-keys: ${{ runner.os }}-aarch64-cargo-
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Cache llama.cpp binaries (macOS arm64)
+        uses: actions/cache@v4
+        id: cache-llama-macos-arm64
+        with:
+          path: src-tauri/binaries/macos-arm64
+          key: ${{ runner.os }}-arm64-llama-${{ env.LLAMA_CPP_RELEASE_TAG }}
+
+      - name: Fetch llama.cpp release (macOS arm64)
+        if: steps.cache-llama-macos-arm64.outputs.cache-hit != 'true'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -e
+          mkdir -p src-tauri/binaries/macos-arm64
+          ASSET_NAME="llama-${LLAMA_CPP_RELEASE_TAG}-bin-macos-arm64.tar.gz"
+          echo "Downloading $ASSET_NAME"
+          curl -fsSL -H "Authorization: token ${GH_TOKEN}" \
+               -H "Accept: application/octet-stream" \
+               -L -o /tmp/llama-macos-arm64.tar.gz \
+               "https://github.com/ggml-org/llama.cpp/releases/download/${LLAMA_CPP_RELEASE_TAG}/${ASSET_NAME}"
+          mkdir -p /tmp/llama-extract
+          tar -xzf /tmp/llama-macos-arm64.tar.gz -C /tmp/llama-extract/
+          # Copy llama-server binary.
+          cp /tmp/llama-extract/llama-server src-tauri/binaries/macos-arm64/ 2>/dev/null || \
+            find /tmp/llama-extract -name "llama-server" -type f -exec cp {} src-tauri/binaries/macos-arm64/ \;
+          # Copy any .dylib files (Metal acceleration etc.).
+          find /tmp/llama-extract -name "*.dylib" -exec cp {} src-tauri/binaries/macos-arm64/ \; 2>/dev/null || true
+          # Copy Metal kernel source if present.
+          find /tmp/llama-extract -name "*.metal" -exec cp {} src-tauri/binaries/macos-arm64/ \; 2>/dev/null || true
+          chmod +x src-tauri/binaries/macos-arm64/llama-server
+          xattr -dr com.apple.quarantine src-tauri/binaries/macos-arm64/llama-server || true
+          echo "Files in macos-arm64/ folder:"
+          ls -la src-tauri/binaries/macos-arm64/
+
+      - name: Build Tauri app
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          args: --target aarch64-apple-darwin
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: xirea-macos-aarch64
+          path: |
+            src-tauri/target/aarch64-apple-darwin/release/bundle/dmg/*.dmg
+            src-tauri/target/aarch64-apple-darwin/release/bundle/macos/*.app
+          if-no-files-found: warn
+
+  # -------------------------------------------------------------------------
+  # macOS — Intel (x86_64)
+  # -------------------------------------------------------------------------
+  build-macos-x86_64:
+    name: macOS (Intel)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install Rust toolchain (stable)
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-apple-darwin
+
+      - name: Cache Cargo registry
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            src-tauri/target
+          key: ${{ runner.os }}-x86_64-cargo-${{ hashFiles('src-tauri/Cargo.lock', 'src-tauri/Cargo.toml') }}
+          restore-keys: ${{ runner.os }}-x86_64-cargo-
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Cache llama.cpp binaries (macOS x64)
+        uses: actions/cache@v4
+        id: cache-llama-macos-x64
+        with:
+          path: src-tauri/binaries/macos-x64
+          key: ${{ runner.os }}-x86_64-llama-${{ env.LLAMA_CPP_RELEASE_TAG }}
+
+      - name: Fetch llama.cpp release (macOS x64)
+        if: steps.cache-llama-macos-x64.outputs.cache-hit != 'true'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -e
+          mkdir -p src-tauri/binaries/macos-x64
+          ASSET_NAME="llama-${LLAMA_CPP_RELEASE_TAG}-bin-macos-x64.tar.gz"
+          echo "Downloading $ASSET_NAME"
+          curl -fsSL -H "Authorization: token ${GH_TOKEN}" \
+               -H "Accept: application/octet-stream" \
+               -L -o /tmp/llama-macos-x64.tar.gz \
+               "https://github.com/ggml-org/llama.cpp/releases/download/${LLAMA_CPP_RELEASE_TAG}/${ASSET_NAME}"
+          mkdir -p /tmp/llama-extract
+          tar -xzf /tmp/llama-macos-x64.tar.gz -C /tmp/llama-extract/
+          cp /tmp/llama-extract/llama-server src-tauri/binaries/macos-x64/ 2>/dev/null || \
+            find /tmp/llama-extract -name "llama-server" -type f -exec cp {} src-tauri/binaries/macos-x64/ \;
+          find /tmp/llama-extract -name "*.dylib" -exec cp {} src-tauri/binaries/macos-x64/ \; 2>/dev/null || true
+          find /tmp/llama-extract -name "*.metal" -exec cp {} src-tauri/binaries/macos-x64/ \; 2>/dev/null || true
+          chmod +x src-tauri/binaries/macos-x64/llama-server
+          xattr -dr com.apple.quarantine src-tauri/binaries/macos-x64/llama-server || true
+          echo "Files in macos-x64/ folder:"
+          ls -la src-tauri/binaries/macos-x64/
+
+      - name: Build Tauri app
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          args: --target x86_64-apple-darwin
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: xirea-macos-x86_64
+          path: |
+            src-tauri/target/x86_64-apple-darwin/release/bundle/dmg/*.dmg
+            src-tauri/target/x86_64-apple-darwin/release/bundle/macos/*.app
+          if-no-files-found: warn
+
+  # -------------------------------------------------------------------------
+  # Linux — x86_64
+  # -------------------------------------------------------------------------
+  build-linux-x86_64:
+    name: Linux (x86_64)
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            build-essential \
+            curl \
+            wget \
+            file \
+            libxdo-dev \
+            libssl-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            pkg-config \
+            libgtk-3-dev \
+            libjavascriptcoregtk-4.1-dev \
+            libsoup-3.0-dev \
+            unzip \
+            libfuse2
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install Rust toolchain (stable)
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-unknown-linux-gnu
+
+      - name: Cache Cargo registry
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            src-tauri/target
+          key: ${{ runner.os }}-x86_64-cargo-${{ hashFiles('src-tauri/Cargo.lock', 'src-tauri/Cargo.toml') }}
+          restore-keys: ${{ runner.os }}-x86_64-cargo-
+
+      - name: Cache Tauri Linux bundler tools
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/tauri-apps
+          key: ${{ runner.os }}-tauri-bundler-${{ hashFiles('.tauri-bundler-version') }}
+          restore-keys: ${{ runner.os }}-tauri-bundler-
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Cache llama.cpp binaries (Linux)
+        uses: actions/cache@v4
+        id: cache-llama-linux
+        with:
+          path: src-tauri/binaries/linux
+          key: ${{ runner.os }}-x86_64-llama-${{ env.LLAMA_CPP_RELEASE_TAG }}
+
+      - name: Fetch llama.cpp release (Linux x64)
+        if: steps.cache-llama-linux.outputs.cache-hit != 'true'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -e
+          mkdir -p src-tauri/binaries/linux
+          ASSET_NAME="llama-${LLAMA_CPP_RELEASE_TAG}-bin-ubuntu-x64.tar.gz"
+          echo "Downloading $ASSET_NAME"
+          curl -fsSL -H "Authorization: token ${GH_TOKEN}" \
+               -H "Accept: application/octet-stream" \
+               -L -o /tmp/llama-linux.tar.gz \
+               "https://github.com/ggml-org/llama.cpp/releases/download/${LLAMA_CPP_RELEASE_TAG}/${ASSET_NAME}"
+          mkdir -p /tmp/llama-extract
+          tar -xzf /tmp/llama-linux.tar.gz -C /tmp/llama-extract/
+          cp /tmp/llama-extract/llama-server src-tauri/binaries/linux/ 2>/dev/null || \
+            find /tmp/llama-extract -name "llama-server" -type f -exec cp {} src-tauri/binaries/linux/ \;
+          # Copy any .so files (official release has these shared libraries)
+          find /tmp/llama-extract -name "*.so*" -exec cp {} src-tauri/binaries/linux/ \; 2>/dev/null || true
+          chmod +x src-tauri/binaries/linux/llama-server
+          echo "Files in linux/ folder:"
+          ls -la src-tauri/binaries/linux/
+
+      - name: Build Tauri app
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Force linuxdeploy AppImages to extract and run without mounting (FUSE)
+          APPIMAGE_EXTRACT_AND_RUN: 1
+          NO_FUSE: 1
+          # Prevent linuxdeploy from scanning the llama shared libraries.
+          # This avoids errors about missing libllama-common.so.0.
+          LINUXDEPLOY_SKIP_DEPLOYMENT_FILES: "*libllama*"
+          # Also add the llama directory to LD_LIBRARY_PATH as a fallback.
+          LD_LIBRARY_PATH: "${{ github.workspace }}/src-tauri/binaries/linux:$LD_LIBRARY_PATH"
+        with:
+          args: --target x86_64-unknown-linux-gnu --verbose
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: xirea-linux-x86_64
+          path: |
+            src-tauri/target/x86_64-unknown-linux-gnu/release/bundle/appimage/*.AppImage
+            src-tauri/target/x86_64-unknown-linux-gnu/release/bundle/deb/*.deb
+          if-no-files-found: warn
+
+  # -------------------------------------------------------------------------
+  # Release — aggregate artifacts + create GitHub release on tag push
+  # -------------------------------------------------------------------------
+  release:
+    name: Release
+    needs:
+      - build-windows-x86_64
+      - build-macos-aarch64
+      - build-macos-x86_64
+      - build-linux-x86_64
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: List artifacts
+        run: find artifacts -type f | sort
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: |
+            artifacts/xirea-windows-x86_64/**/*.msi
+            artifacts/xirea-windows-x86_64/**/*.exe
+            artifacts/xirea-macos-aarch64/**/*.dmg
+            artifacts/xirea-macos-x86_64/**/*.dmg
+            artifacts/xirea-linux-x86_64/**/*.AppImage
+            artifacts/xirea-linux-x86_64/**/*.deb

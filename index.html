@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="color-scheme" content="dark light" />
+    <title>Xirea</title>
+    <meta name="description" content="Xirea — A premium, private, on-device AI assistant for the desktop." />
+    <link rel="icon" type="image/png" href="/icon.png" />
+    <link rel="apple-touch-icon" href="/icon.png" />
+    <link rel="mask-icon" href="/icon.png" />
+    <link rel="preconnect" href="https://rsms.me/" />
+    <link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Sora:wght@400;500;600;700&display=swap" />
+    <!-- Local CSS bundles — no CDN, so Tracking Prevention / Brave Shields
+         can't block them. atom-one-dark.css provides the syntax highlighting
+         colours; katex.min.css renders LaTeX math. Fonts are bundled under
+         /styles/fonts/ so the relative `url(fonts/...)` references resolve. -->
+    <link rel="stylesheet" href="/styles/atom-one-dark.min.css" />
+    <link rel="stylesheet" href="/styles/katex.min.css" />
+  </head>
+  <body class="bg-surface-midnight text-ink-primary antialiased">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

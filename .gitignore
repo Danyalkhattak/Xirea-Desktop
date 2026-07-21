@@ -1,0 +1,73 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build outputs
+dist/
+dist-ssr/
+build/
+*.local
+
+# Tauri
+src-tauri/target/
+src-tauri/Cargo.lock
+src-tauri/gen/
+
+# Bundled llama-server binaries — platform-specific, too large for git.
+# Windows binaries ARE committed (small enough, used for local dev on Windows).
+# Linux/macOS binaries are downloaded by CI (see .github/workflows/build.yml).
+src-tauri/binaries/linux/*
+src-tauri/binaries/macos-x64/*
+src-tauri/binaries/macos-arm64/*
+# Keep the README.md files in each subfolder:
+!src-tauri/binaries/linux/README.md
+!src-tauri/binaries/macos-x64/README.md
+!src-tauri/binaries/macos-arm64/README.md
+
+# Legacy flat-layout binaries (no longer used — kept for backward compat).
+src-tauri/binaries/llama-server-*
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# OS files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Cache
+.cache/
+.parcel-cache/
+.eslintcache/
+.npm/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Test coverage
+coverage/
+*.lcov
+
+# Misc
+*.tsbuildinfo
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*

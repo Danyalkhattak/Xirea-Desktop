@@ -1,0 +1,15 @@
+# Default CODEOWNERS — every PR needs at least one review from the owner.
+# Format: <path-pattern> @<github-username>
+
+* @Danyalkhattak
+
+# Rust backend — anyone touching src-tauri/ should be familiar with Tauri 2
+# event-name discipline (see CONTRIBUTING.md).
+src-tauri/ @Danyalkhattak
+
+# Frontend lib/tauri.ts is the single API surface for Rust commands.
+# Changes here affect every feature.
+src/lib/tauri.ts @Danyalkhattak
+
+# CI / build config.
+.github/ @Danyalkhattak

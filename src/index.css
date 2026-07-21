@@ -1,0 +1,602 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================================================
+   Xirea — Global Design Tokens
+   Brand: Indigo #818CF8 / Teal #2DD4BF / Fuchsia #E879F9 on midnight #0B0F1A
+   ============================================================================ */
+
+@layer base {
+  :root,
+  html.dark {
+    /* Surfaces — dark theme (default) */
+    --surface-midnight: #0B0F1A;
+    --surface-deep: #0E131F;
+    --surface-base: #121826;
+    --surface-raised: #161D2E;
+    --surface-overlay: #1B2336;
+    --surface-subtle: #222B41;
+    --surface-hover: #273150;
+
+    /* Light-named surface tokens (kept for legacy compatibility) */
+    --surface-cloud: #0B0F1A;
+    --surface-paper: #0E131F;
+    --surface-mist: #121826;
+    --surface-haze: #1B2336;
+
+    /* Ink (text) */
+    --ink-primary: #F8FAFC;
+    --ink-secondary: #CBD5E1;
+    --ink-tertiary: #94A3B8;
+    --ink-muted: #64748B;
+    --ink-faint: #475569;
+
+    /* Lines (borders / dividers) */
+    --line-subtle: rgba(148, 163, 184, 0.10);
+    --line-soft: rgba(148, 163, 184, 0.16);
+    --line-medium: rgba(148, 163, 184, 0.24);
+    --line-strong: rgba(148, 163, 184, 0.36);
+
+    /* Brand soft (used in gradients) */
+    --brand-indigo-soft: rgba(129, 140, 248, 0.16);
+    --brand-teal-soft: rgba(45, 212, 191, 0.12);
+    --brand-fuchsia-soft: rgba(232, 121, 249, 0.16);
+
+    /* Overlays used by Tailwind classes like `bg-overlay/6`.
+       In dark mode we want a *white* overlay (lighten on dark);
+       in light mode we want a *black* overlay (darken on light).
+       We expose `--overlay-rgb` as a space-separated "r g b" triple so Tailwind
+       can apply the `<alpha-value>` modifier via `rgb(var(--overlay-rgb) / alpha)`.
+       White = 255 255 255, Black = 15 23 42 (slate-900). */
+    --overlay-rgb: 255 255 255;
+    --overlay-04: rgba(255, 255, 255, 0.04);
+    --overlay-06: rgba(255, 255, 255, 0.06);
+    --overlay-08: rgba(255, 255, 255, 0.08);
+    --overlay-12: rgba(255, 255, 255, 0.12);
+
+    /* Foreground inverted (used as text color where `text-white` was previously used
+       on gradient buttons — kept white in dark, kept white in light because buttons
+       are always gradient-colored) */
+    --fg-on-accent: #ffffff;
+
+    /* Generic foreground + background (used by body) */
+    --xirea-bg: #0B0F1A;
+    --xirea-bg-raised: #121826;
+    --xirea-bg-overlay: #1B2336;
+    --xirea-fg: #F8FAFC;
+    --xirea-fg-muted: #94A3B8;
+    --xirea-accent: #818CF8;
+    --xirea-accent-2: #2DD4BF;
+    --xirea-accent-3: #E879F9;
+
+    --xirea-radius: 14px;
+    --xirea-sidebar-w: 280px;
+    --xirea-topbar-h: 48px;
+    --xirea-statusbar-h: 28px;
+    --scrollbar-w: 10px;
+    color-scheme: dark;
+  }
+
+  html.light {
+    /* Surfaces — light theme */
+    --surface-midnight: #F1F5F9;
+    --surface-deep: #F8FAFC;
+    --surface-base: #FFFFFF;
+    --surface-raised: #FFFFFF;
+    --surface-overlay: #FFFFFF;
+    --surface-subtle: #F1F5F9;
+    --surface-hover: #E2E8F0;
+
+    /* Light-named surface tokens */
+    --surface-cloud: #F8FAFC;
+    --surface-paper: #FFFFFF;
+    --surface-mist: #F1F5F9;
+    --surface-haze: #E2E8F0;
+
+    /* Ink (text) — dark on light */
+    --ink-primary: #0F172A;
+    --ink-secondary: #334155;
+    --ink-tertiary: #475569;
+    --ink-muted: #64748B;
+    --ink-faint: #94A3B8;
+
+    /* Lines */
+    --line-subtle: rgba(15, 23, 42, 0.08);
+    --line-soft: rgba(15, 23, 42, 0.12);
+    --line-medium: rgba(15, 23, 42, 0.20);
+    --line-strong: rgba(15, 23, 42, 0.32);
+
+    /* Brand soft — stronger tint in light for visibility */
+    --brand-indigo-soft: rgba(79, 70, 229, 0.08);
+    --brand-teal-soft: rgba(13, 148, 136, 0.08);
+    --brand-fuchsia-soft: rgba(217, 70, 239, 0.08);
+
+    /* Overlays — black on light */
+    --overlay-rgb: 15 23 42;
+    --overlay-04: rgba(15, 23, 42, 0.04);
+    --overlay-06: rgba(15, 23, 42, 0.06);
+    --overlay-08: rgba(15, 23, 42, 0.08);
+    --overlay-12: rgba(15, 23, 42, 0.12);
+
+    --fg-on-accent: #ffffff;
+
+    --xirea-bg: #F8FAFC;
+    --xirea-bg-raised: #FFFFFF;
+    --xirea-bg-overlay: #FFFFFF;
+    --xirea-fg: #0F172A;
+    --xirea-fg-muted: #64748B;
+    --xirea-accent: #4F46E5;
+    --xirea-accent-2: #0D9488;
+    --xirea-accent-3: #D946EF;
+    color-scheme: light;
+  }
+
+  * {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* All interactive elements show a pointer cursor by default. Buttons,
+     links, role=button, summary, label[for], and elements with
+     `data-clickable="true"` all get pointer. Disabled elements get
+     `not-allowed` instead. This is a global default so we don't have to
+     remember to add `cursor-pointer` to every individual button. */
+  button,
+  [role="button"],
+  a,
+  summary,
+  label[for],
+  [data-clickable="true"],
+  select,
+  .clickable {
+    cursor: pointer;
+  }
+  button:disabled,
+  [role="button"][aria-disabled="true"],
+  [data-disabled="true"] {
+    cursor: not-allowed;
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+  }
+
+  body {
+    font-family: "Inter", "Inter Variable", -apple-system, system-ui, sans-serif;
+    font-feature-settings: "cv11", "ss01", "ss03";
+    font-variant-numeric: tabular-nums;
+    background: var(--xirea-bg);
+    color: var(--xirea-fg);
+    user-select: none;
+  }
+
+  /* User-select for content areas only */
+  .selectable,
+  .selectable * {
+    user-select: text;
+  }
+
+  ::selection {
+    background: rgba(129, 140, 248, 0.30);
+    color: inherit;
+  }
+
+  /* Scrollbars — slim, themed, animated */
+  ::-webkit-scrollbar {
+    width: var(--scrollbar-w);
+    height: var(--scrollbar-w);
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(148, 163, 184, 0.16);
+    border-radius: 999px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(148, 163, 184, 0.32);
+    background-clip: padding-box;
+    border: 2px solid transparent;
+  }
+  ::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+
+  /* Headings use the display face */
+  h1, h2, h3, h4, h5, h6 {
+    font-family: "Sora", "Inter Display", "Inter", system-ui, sans-serif;
+    letter-spacing: -0.018em;
+    font-weight: 600;
+  }
+
+  /* Focus rings — visible, on-brand, never clipped */
+  :focus-visible {
+    outline: 2px solid rgba(129, 140, 248, 0.85);
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+  button:focus-visible,
+  a:focus-visible,
+  [role="button"]:focus-visible {
+    outline-offset: 1px;
+  }
+
+  /* Drag region — Tauri window dragging */
+  .drag-region {
+    -webkit-app-region: drag;
+    user-select: none;
+  }
+  .no-drag {
+    -webkit-app-region: no-drag;
+  }
+
+  /* Code blocks */
+  code, pre, kbd, samp {
+    font-family: "JetBrains Mono", "SF Mono", Menlo, monospace;
+    font-feature-settings: "calt" 1, "liga" 0;
+  }
+}
+
+/* ============================================================================
+   Components — composable utility layers
+   ============================================================================ */
+
+@layer components {
+  /* Glass panel — only used where it earns its keep (topbar, command bar) */
+  .glass {
+    background: linear-gradient(180deg, rgba(18, 24, 38, 0.72), rgba(11, 15, 26, 0.68));
+    backdrop-filter: blur(20px) saturate(140%);
+    -webkit-backdrop-filter: blur(20px) saturate(140%);
+    border: 1px solid rgba(148, 163, 184, 0.10);
+  }
+  html.light .glass {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(248, 250, 252, 0.88));
+    backdrop-filter: blur(20px) saturate(140%);
+    -webkit-backdrop-filter: blur(20px) saturate(140%);
+    border: 1px solid rgba(15, 23, 42, 0.08);
+  }
+
+  /* Surface card — layered, not flat */
+  .surface {
+    background: linear-gradient(180deg, var(--surface-raised), var(--surface-base));
+    border: 1px solid var(--line-subtle);
+    border-radius: var(--xirea-radius);
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.10), inset 0 1px 0 rgba(148, 163, 184, 0.04);
+  }
+  html.light .surface {
+    background: linear-gradient(180deg, #FFFFFF, #FCFCFD);
+    border: 1px solid rgba(15, 23, 42, 0.06);
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  }
+
+  .surface-raised {
+    background: linear-gradient(180deg, var(--surface-overlay), var(--surface-raised));
+    border: 1px solid var(--line-soft);
+    border-radius: var(--xirea-radius);
+    box-shadow: 0 12px 32px rgba(15, 23, 42, 0.20), inset 0 1px 0 rgba(148, 163, 184, 0.06);
+  }
+  html.light .surface-raised {
+    background: linear-gradient(180deg, #FFFFFF, #F8FAFC);
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    box-shadow: 0 12px 32px rgba(15, 23, 42, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  }
+
+  /* Gradient text for hero moments — single-accent (indigo) rather than
+     3-color rainbow. Keeps the dark theme refined. */
+  .text-gradient-brand {
+    background: linear-gradient(135deg, #818CF8 0%, #6366f1 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  html.light .text-gradient-brand {
+    background: linear-gradient(135deg, #4F46E5 0%, #6366f1 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* Brand backdrop glow — single accent color, used sparingly */
+  .brand-glow {
+    position: relative;
+  }
+  .brand-glow::before {
+    content: "";
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(135deg, rgba(129, 140, 248, 0.5), rgba(99, 102, 241, 0.3));
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+    opacity: 0.5;
+  }
+
+  /* Keyboard shortcut chip */
+  .kbd {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    border-radius: 5px;
+    background: var(--overlay-06);
+    border: 1px solid var(--line-soft);
+    border-bottom-width: 2px;
+    font-family: "JetBrains Mono", monospace;
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--ink-muted);
+    line-height: 1;
+  }
+
+  /* Dotted grid background for empty states */
+  .bg-dot-grid {
+    background-image: radial-gradient(rgba(148, 163, 184, 0.16) 1px, transparent 1px);
+    background-size: 22px 22px;
+    background-position: 0 0;
+  }
+
+  /* Subtle line divider with gradient fade */
+  .hr-gradient {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--line-medium), transparent);
+    border: 0;
+  }
+
+  /* Markdown body — used inside chat messages */
+  .prose-xirea {
+    color: var(--ink-primary);
+    font-size: 0.9375rem;
+    line-height: 1.6;
+    word-wrap: break-word;
+  }
+  .prose-xirea > * + * { margin-top: 0.85em; }
+  .prose-xirea h1, .prose-xirea h2, .prose-xirea h3 {
+    font-family: "Sora", system-ui, sans-serif;
+    font-weight: 600;
+    letter-spacing: -0.018em;
+    margin-top: 1.6em;
+    margin-bottom: 0.6em;
+    line-height: 1.25;
+  }
+  .prose-xirea h1 { font-size: 1.45em; }
+  .prose-xirea h2 { font-size: 1.25em; }
+  .prose-xirea h3 { font-size: 1.1em; }
+  .prose-xirea h4 { font-size: 1em; font-weight: 600; }
+  .prose-xirea p { margin: 0.6em 0; }
+  .prose-xirea a {
+    color: #6366f1;
+    text-decoration: none;
+    border-bottom: 1px solid rgba(99, 102, 241, 0.4);
+    transition: border-color 0.15s ease;
+  }
+  html.dark .prose-xirea a {
+    color: #a5b4fc;
+    border-bottom-color: rgba(165, 180, 252, 0.4);
+  }
+  .prose-xirea a:hover { border-bottom-color: currentColor; }
+  .prose-xirea ul, .prose-xirea ol { padding-left: 1.4em; }
+  .prose-xirea li { margin: 0.25em 0; }
+  .prose-xirea li::marker { color: var(--ink-muted); }
+  .prose-xirea blockquote {
+    border-left: 3px solid var(--xirea-accent);
+    padding: 0.2em 0 0.2em 1em;
+    margin: 1em 0;
+    color: var(--ink-secondary);
+    font-style: italic;
+  }
+  .prose-xirea code:not(pre code) {
+    background: rgba(129, 140, 248, 0.12);
+    border: 1px solid rgba(129, 140, 248, 0.18);
+    border-radius: 6px;
+    padding: 0.1em 0.4em;
+    font-size: 0.86em;
+    color: #4f46e5;
+  }
+  html.dark .prose-xirea code:not(pre code) {
+    color: #c7d2fe;
+  }
+  .prose-xirea pre {
+    background: #0b1020 !important;
+    border: 1px solid var(--line-soft);
+    border-radius: 12px;
+    padding: 14px 16px;
+    overflow-x: auto;
+    font-size: 0.85em;
+    line-height: 1.55;
+    /* Code text is ALWAYS light, regardless of theme — the dark code
+       background must keep readable contrast in light mode too. */
+    color: #E2E8F0;
+  }
+  .prose-xirea pre code {
+    background: transparent;
+    border: 0;
+    padding: 0;
+    color: inherit;
+    font-size: inherit;
+  }
+
+  /* Code block wrapper — always dark, even in light theme, so syntax
+     highlighting (which uses dark-theme hljs colors) stays readable. */
+  .xirea-codeblock {
+    background: #0b1020 !important;
+    color: #E2E8F0;
+  }
+  .xirea-codeblock pre,
+  .xirea-codeblock code {
+    color: #E2E8F0;
+  }
+  .xirea-codeblock .border-b {
+    border-color: rgba(148, 163, 184, 0.10) !important;
+  }
+  /* Header chip text in code blocks — always light. Note: we DON'T style
+     the inner `code` spans here, because hljs (highlight.js) sets its own
+     colors on `.hljs-keyword`, `.hljs-string`, etc. that we want to keep.
+     The previous rule ` .xirea-codeblock span` was overriding ALL spans
+     including hljs tokens, which made all syntax-highlighted text the
+     same grey color. */
+  .xirea-codeblock > .border-b span,
+  .xirea-codeblock > div:first-child span {
+    color: #94A3B8;
+  }
+  .xirea-codeblock > .border-b button,
+  .xirea-codeblock > div:first-child button {
+    color: #94A3B8;
+  }
+  .xirea-codeblock button:hover {
+    color: #E2E8F0;
+  }
+  .prose-xirea table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.88em;
+    border: 1px solid var(--line-soft);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .prose-xirea th,
+  .prose-xirea td {
+    border: 1px solid var(--line-soft);
+    padding: 8px 12px;
+    text-align: left;
+  }
+  .prose-xirea th {
+    background: var(--overlay-08);
+    font-weight: 600;
+    color: var(--ink-primary);
+  }
+  .prose-xirea hr {
+    border: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--line-medium), transparent);
+    margin: 1.4em 0;
+  }
+  .prose-xirea img {
+    max-width: 100%;
+    border-radius: 10px;
+    border: 1px solid var(--line-soft);
+  }
+  .prose-xirea input[type="checkbox"] {
+    margin-right: 0.5em;
+    accent-color: #818cf8;
+  }
+  .prose-xirea .katex { font-size: 1.05em; }
+
+  /* Animations */
+  .animate-shimmer-bg {
+    background: linear-gradient(90deg, var(--overlay-04) 0%, var(--overlay-12) 50%, var(--overlay-04) 100%);
+    background-size: 200% 100%;
+    animation: shimmer 1.6s linear infinite;
+  }
+
+  /* Custom range slider */
+  input[type="range"].xirea-range {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 4px;
+    background: var(--overlay-12);
+    border-radius: 999px;
+    outline: none;
+  }
+  input[type="range"].xirea-range::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #6366f1;
+    cursor: pointer;
+    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.16);
+    transition: box-shadow 0.15s ease, transform 0.15s ease;
+  }
+  input[type="range"].xirea-range::-webkit-slider-thumb:hover {
+    transform: scale(1.1);
+    box-shadow: 0 0 0 6px rgba(99, 102, 241, 0.22);
+  }
+  input[type="range"].xirea-range::-moz-range-thumb {
+    width: 14px;
+    height: 14px;
+    border: 0;
+    border-radius: 50%;
+    background: #6366f1;
+    cursor: pointer;
+  }
+
+  /* Switch */
+  .xirea-switch {
+    position: relative;
+    width: 36px;
+    height: 20px;
+    border-radius: 999px;
+    background: var(--overlay-12);
+    transition: background 0.18s ease;
+    flex-shrink: 0;
+  }
+  .xirea-switch[data-checked="true"] {
+    background: #6366f1;
+  }
+  .xirea-switch::after {
+    content: "";
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.25);
+    transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .xirea-switch[data-checked="true"]::after {
+    transform: translateX(16px);
+  }
+}
+
+/* ============================================================================
+   Utilities
+   ============================================================================ */
+
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+  .text-balance { text-wrap: balance; }
+  .text-pretty { text-wrap: pretty; }
+
+  /* Drag handle visible only when hovering resizer */
+  .resize-handle {
+    position: relative;
+    transition: background 0.18s ease;
+  }
+  .resize-handle:hover,
+  .resize-handle[data-active="true"] {
+    background: rgba(129, 140, 248, 0.4);
+  }
+
+  /* Reduced motion — kills framer-motion transitions and CSS animations.
+     Applied when the user enables Settings → Appearance → Reduce motion OR
+     turns off Animations. */
+  html.reduce-motion *,
+  html.reduce-motion *::before,
+  html.reduce-motion *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
