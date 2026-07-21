@@ -126,11 +126,6 @@ npm run tauri build
 
 Bundles land in `src-tauri/target/release/bundle/`.
 
-### Bundling llama.cpp (optional but recommended)
-
-Drop a `llama-server-<target-triple>` binary into `src-tauri/binaries/` before building so users get one-click **Run** on local GGUF models. Without it, Xirea falls back to `llama-server` on the user's `PATH`.
-
-See [`src-tauri/binaries/README.md`](./src-tauri/binaries/README.md) and [`LlamaDocumentation.md`](./LlamaDocumentation.md) for the full guide.
 
 ## Features
 
